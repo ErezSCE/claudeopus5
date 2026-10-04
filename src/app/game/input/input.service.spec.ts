@@ -393,4 +393,98 @@ describe('InputService', () => {
       expect(service['touchElement']).toBeNull();
     });
   });
+
+  describe('event listener cleanup', () => {
+    it('[ASSIGN-022#1] should properly remove event listeners on destroy', () => {
+      const mockElement = document.createElement('div');
+      const removeEventListenerSpy = spyOn(mockElement, 'removeEventListener');
+      const documentRemoveEventListenerSpy = spyOn(
+        document,
+        'removeEventListener'
+      );
+
+      service.registerTouchElement(mockElement);
+      service.ngOnDestroy();
+
+      // Verify touch listeners are removed
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'touchstart',
+        jasmine.any(Function),
+        jasmine.any(Object)
+      );
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'touchend',
+        jasmine.any(Function)
+      );
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'touchmove',
+        jasmine.any(Function)
+      );
+
+      // Verify document listeners are removed
+      expect(documentRemoveEventListenerSpy).toHaveBeenCalledWith(
+        'keydown',
+        jasmine.any(Function)
+      );
+      expect(documentRemoveEventListenerSpy).toHaveBeenCalledWith(
+        'keyup',
+        jasmine.any(Function)
+      );
+    });
+
+    it('[ASSIGN-022#1] should not stack multiple event listeners on repeated registration', (done) => {
+      const mockElement = document.createElement('div');
+      let swipeCount = 0;
+
+      service.registerTouchElement(mockElement);
+      service.registerTouchElement(mockElement); // Register twice
+
+      service.direction$.subscribe((direction) => {
+        if (direction === 'right') {
+          swipeCount++;
+        }
+      });
+
+      // Simulate a single swipe
+      const touchStartEvent = new TouchEvent('touchstart', {
+        touches: [
+          new Touch({
+            identifier: 0,
+            target: mockElement,
+            clientX: 0,
+            clientY: 0,
+            screenX: 0,
+            screenY: 0,
+            pageX: 0,
+            pageY: 0,
+          }),
+        ],
+      });
+
+      const touchEndEvent = new TouchEvent('touchend', {
+        changedTouches: [
+          new Touch({
+            identifier: 0,
+            target: mockElement,
+            clientX: 50,
+            clientY: 0,
+            screenX: 50,
+            screenY: 0,
+            pageX: 50,
+            pageY: 0,
+          }),
+        ],
+      });
+
+      mockElement.dispatchEvent(touchStartEvent);
+      mockElement.dispatchEvent(touchEndEvent);
+
+      // Give time for async operations
+      setTimeout(() => {
+        // Should be called only once, not twice
+        expect(swipeCount).toBe(1);
+        done();
+      }, 100);
+    });
+  });
 });

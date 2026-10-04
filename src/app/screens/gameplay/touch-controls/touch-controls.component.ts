@@ -11,6 +11,7 @@ import { Direction } from '../../../shared/types';
  *
  * The controls are positioned in the bottom-right corner to avoid obstructing the maze.
  * They are hidden on desktop viewports (via CSS media query).
+ * Uses (pointerdown) and (pointerup) to handle both touch and mouse input uniformly.
  */
 @Component({
   selector: 'app-touch-controls',
@@ -23,10 +24,8 @@ import { Direction } from '../../../shared/types';
       <button
         class="touch-button touch-button-up"
         aria-label="Move up"
-        (mousedown)="onButtonDown('up')"
-        (touchstart)="onButtonDown('up')"
-        (mouseup)="onButtonUp()"
-        (touchend)="onButtonUp()"
+        (pointerdown)="onButtonDown('up')"
+        (pointerup)="onButtonUp()"
       >
         ▲
       </button>
@@ -36,30 +35,24 @@ import { Direction } from '../../../shared/types';
         <button
           class="touch-button touch-button-left"
           aria-label="Move left"
-          (mousedown)="onButtonDown('left')"
-          (touchstart)="onButtonDown('left')"
-          (mouseup)="onButtonUp()"
-          (touchend)="onButtonUp()"
+          (pointerdown)="onButtonDown('left')"
+          (pointerup)="onButtonUp()"
         >
           ◀
         </button>
         <button
           class="touch-button touch-button-down"
           aria-label="Move down"
-          (mousedown)="onButtonDown('down')"
-          (touchstart)="onButtonDown('down')"
-          (mouseup)="onButtonUp()"
-          (touchend)="onButtonUp()"
+          (pointerdown)="onButtonDown('down')"
+          (pointerup)="onButtonUp()"
         >
           ▼
         </button>
         <button
           class="touch-button touch-button-right"
           aria-label="Move right"
-          (mousedown)="onButtonDown('right')"
-          (touchstart)="onButtonDown('right')"
-          (mouseup)="onButtonUp()"
-          (touchend)="onButtonUp()"
+          (pointerdown)="onButtonDown('right')"
+          (pointerup)="onButtonUp()"
         >
           ▶
         </button>
@@ -110,7 +103,7 @@ import { Direction } from '../../../shared/types';
         transform: scale(0.95);
       }
 
-      .touch-button:focus {
+      .touch-button:focus-visible {
         outline: 2px solid #0066ff;
         outline-offset: 2px;
       }
@@ -148,7 +141,7 @@ export class TouchControlsComponent implements OnInit {
   }
 
   /**
-   * Handle button press (mousedown or touchstart).
+   * Handle button press (pointerdown).
    */
   onButtonDown(direction: Direction): void {
     this.activeButton = direction;
@@ -156,7 +149,7 @@ export class TouchControlsComponent implements OnInit {
   }
 
   /**
-   * Handle button release (mouseup or touchend).
+   * Handle button release (pointerup).
    */
   onButtonUp(): void {
     this.activeButton = null;

@@ -126,5 +126,20 @@ describe('TouchControlsComponent', () => {
       component.onButtonUp();
       expect(component['activeButton']).toBeNull();
     });
+
+    it('[ASSIGN-022#1] should call setDirection only once per pointer event', () => {
+      spyOn(inputService, 'setDirection');
+      component.onButtonDown('up');
+      expect(inputService.setDirection).toHaveBeenCalledTimes(1);
+      expect(inputService.setDirection).toHaveBeenCalledWith('up');
+    });
+
+    it('[ASSIGN-022#1] should use :focus-visible for keyboard focus styling', () => {
+      // The component uses :focus-visible in its CSS for keyboard-only focus
+      // This is verified by checking the component's styles property
+      const styles = component['styles'];
+      expect(styles).toBeDefined();
+      expect(styles).toContain(':focus-visible');
+    });
   });
 });

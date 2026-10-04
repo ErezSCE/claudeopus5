@@ -191,4 +191,113 @@ describe('ScoreStorageService', () => {
       expect(reloadedAllTime).toBe(5000);
     });
   });
+
+  describe('isHighScore', () => {
+    it('[US-027#1] should return false for scores <= 0', () => {
+      expect(service.isHighScore(0)).toBe(false);
+      expect(service.isHighScore(-100)).toBe(false);
+    });
+
+    it('[US-027#1] should return true for any positive score when list has fewer than 10 entries', () => {
+      expect(service.isHighScore(1)).toBe(true);
+      expect(service.isHighScore(100)).toBe(true);
+
+      service.saveHighScore({ initials: 'AAA', score: 500 });
+      expect(service.isHighScore(1)).toBe(true);
+    });
+
+    it('[US-027#1] should return true only if score beats the lowest top-10 score', () => {
+      // Fill with 10 scores
+      for (let i = 0; i < 10; i++) {
+        service.saveHighScore({
+          initials: `${String(i).padStart(3, '0')}`,
+          score: 1000 - i * 10,
+        });
+      }
+
+      // Lowest top-10 score is 910
+      expect(service.isHighScore(911)).toBe(true);
+      expect(service.isHighScore(910)).toBe(false);
+      expect(service.isHighScore(909)).toBe(false);
+    });
+  });
+
+  describe('validation: corrupted or invalid entries', () => {
+    it('[US-027#1] should filter out entries with missing initials', () => {
+      const corrupted = [
+        { score: 1000, createdAt: '2024-01-01T00:00:00Z' }, // missing initials
+        { initials: 'AAA', score: 500, createdAt: '2024-01-02T00:00:00Z' },
+      ];
+      localStorage.setItem('pacman_high_scores', JSON.stringify(corrupted));
+
+      const scores = service.loadHighScores();
+      expect(scores.length).toBe(1);
+      expect(scores[0].initials).toBe('AAA');
+    });
+
+    it('[US-027#1] should filter out entries with non-string initials', () => {
+      const corrupted = [
+        { initials: 123, score: 1000, createdAt: '2024-01-01T00:00:00Z' },
+        { initials: 'AAA', score: 500, createdAt: '2024-01-02T00:00:00Z' },
+      ];
+      localStorage.setItem('pacman_high_scores', JSON.stringify(corrupted));
+
+      const scores = service.loadHighScores();
+      expect(scores.length).toBe(1);
+      expect(scores[0].initials).toBe('AAA');
+    });
+
+    it('[US-027#1] should filter out entries with non-number score', () => {
+      const corrupted = [
+        { initials: 'AAA', score: 'not a number', createdAt: '2024-01-01T00:00:00Z' },
+        { initials: 'BBB', score: 500, createdAt: '2024-01-02T00:00:00Z' },
+      ];
+      localStorage.setItem('pacman_high_scores', JSON.stringify(corrupted));
+
+      const scores = service.loadHighScores();
+      expect(scores.length).toBe(1);
+      expect(scores[0].initials).toBe('BBB');
+    });
+
+    it('[US-027#1] should filter out entries with score <= 0', () => {
+      const corrupted = [
+        { initials: 'AAA', score: 0, createdAt: '2024-01-01T00:00:00Z' },
+        { initials: 'BBB', score: -100, createdAt: '2024-01-02T00:00:00Z' },
+        { initials: 'CCC', score: 500, createdAt: '2024-01-03T00:00:00Z' },
+      ];
+      localStorage.setItem('pacman_high_scores', JSON.stringify(corrupted));
+
+      const scores = service.loadHighScores();
+      expect(scores.length).toBe(1);
+      expect(scores[0].initials).toBe('CCC');
+    });
+
+    it('[US-027#1] should filter out entries with missing createdAt', () => {
+      const corrupted = [
+        { initials: 'AAA', score: 1000 }, // missing createdAt
+        { initials: 'BBB', score: 500, createdAt: '2024-01-02T00:00:00Z' },
+      ];
+      localStorage.setItem('pacman_high_scores', JSON.stringify(corrupted));
+
+      const scores = service.loadHighScores();
+      expect(scores.length).toBe(1);
+      expect(scores[0].initials).toBe('BBB');
+    });
+
+    it('[US-027#1] should reject saveHighScore with score <= 0', () => {
+      service.saveHighScore({ initials: 'AAA', score: 0 });
+      service.saveHighScore({ initials: 'BBB', score: -100 });
+
+      const scores = service.loadHighScores();
+      expect(scores.length).toBe(0);
+    });
+
+    it('[US-027#1] should return 0 for loadAllTimeHigh if stored value is <= 0', () => {
+      localStorage.setItem('pacman_all_time_high', '0');
+      expect(service.loadAllTimeHigh()).toBe(0);
+
+      localStorage.setItem('pacman_all_time_high', '-100');
+      expect(service.loadAllTimeHigh()).toBe(0);
+    });
+  });
 });

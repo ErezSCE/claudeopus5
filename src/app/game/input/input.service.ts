@@ -21,6 +21,13 @@ export class InputService implements OnDestroy {
   private touchStartY = 0;
   private touchElement: HTMLElement | null = null;
 
+  // Bound handlers stored as fields so they can be properly removed
+  private readonly onKeyDownBound = (event: KeyboardEvent) => this.onKeyDown(event);
+  private readonly onKeyUpBound = (event: KeyboardEvent) => this.onKeyUp(event);
+  private readonly onTouchStartBound = (event: TouchEvent) => this.onTouchStart(event);
+  private readonly onTouchMoveBound = (event: TouchEvent) => this.onTouchMove(event);
+  private readonly onTouchEndBound = (event: TouchEvent) => this.onTouchEnd(event);
+
   constructor(private readonly zone: NgZone) {
     this.setupKeyboardInput();
   }
@@ -39,9 +46,9 @@ export class InputService implements OnDestroy {
   registerTouchElement(element: HTMLElement): void {
     this.touchElement = element;
     this.zone.runOutsideAngular(() => {
-      element.addEventListener('touchstart', this.onTouchStart.bind(this), false);
-      element.addEventListener('touchmove', this.onTouchMove.bind(this), false);
-      element.addEventListener('touchend', this.onTouchEnd.bind(this), false);
+      element.addEventListener('touchstart', this.onTouchStartBound, { passive: true });
+      element.addEventListener('touchmove', this.onTouchMoveBound, { passive: true });
+      element.addEventListener('touchend', this.onTouchEndBound, { passive: true });
     });
   }
 
@@ -51,9 +58,9 @@ export class InputService implements OnDestroy {
   unregisterTouchElement(): void {
     if (this.touchElement) {
       this.zone.runOutsideAngular(() => {
-        this.touchElement!.removeEventListener('touchstart', this.onTouchStart.bind(this));
-        this.touchElement!.removeEventListener('touchmove', this.onTouchMove.bind(this));
-        this.touchElement!.removeEventListener('touchend', this.onTouchEnd.bind(this));
+        this.touchElement!.removeEventListener('touchstart', this.onTouchStartBound);
+        this.touchElement!.removeEventListener('touchmove', this.onTouchMoveBound);
+        this.touchElement!.removeEventListener('touchend', this.onTouchEndBound);
       });
       this.touchElement = null;
     }
@@ -61,6 +68,11 @@ export class InputService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.unregisterTouchElement();
+    // Remove keyboard listeners
+    this.zone.runOutsideAngular(() => {
+      document.removeEventListener('keydown', this.onKeyDownBound);
+      document.removeEventListener('keyup', this.onKeyUpBound);
+    });
     this.directionSubject.complete();
   }
 
@@ -69,8 +81,8 @@ export class InputService implements OnDestroy {
    */
   private setupKeyboardInput(): void {
     this.zone.runOutsideAngular(() => {
-      document.addEventListener('keydown', this.onKeyDown.bind(this), false);
-      document.addEventListener('keyup', this.onKeyUp.bind(this), false);
+      document.addEventListener('keydown', this.onKeyDownBound, false);
+      document.addEventListener('keyup', this.onKeyUpBound, false);
     });
   }
 

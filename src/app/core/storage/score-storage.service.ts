@@ -17,7 +17,25 @@ export class ScoreStorageService {
   constructor() {}
 
   /**
+   * Validate that an entry has the correct shape.
+   * Returns true if the entry is a valid HighScoreEntry.
+   */
+  private isValidEntry(entry: unknown): entry is HighScoreEntry {
+    if (typeof entry !== 'object' || entry === null) {
+      return false;
+    }
+    const obj = entry as Record<string, unknown>;
+    return (
+      typeof obj['initials'] === 'string' &&
+      typeof obj['score'] === 'number' &&
+      (obj['score'] as number) > 0 &&
+      typeof obj['createdAt'] === 'string'
+    );
+  }
+
+  /**
    * Load the top-10 high score list from localStorage.
+   * Filters out invalid entries and returns only valid HighScoreEntry objects.
    * Returns an empty array if no scores are saved or if parsing fails.
    */
   loadHighScores(): HighScoreEntry[] {
@@ -30,7 +48,8 @@ export class ScoreStorageService {
       if (!Array.isArray(parsed)) {
         return [];
       }
-      return parsed;
+      // Filter to only valid entries
+      return parsed.filter((entry) => this.isValidEntry(entry)) as HighScoreEntry[];
     } catch {
       return [];
     }
@@ -38,7 +57,7 @@ export class ScoreStorageService {
 
   /**
    * Load the all-time high score from localStorage.
-   * Returns 0 if no score is saved or if parsing fails.
+   * Returns 0 if no score is saved, if parsing fails, or if the score is <= 0.
    */
   loadAllTimeHigh(): number {
     try {
@@ -47,7 +66,10 @@ export class ScoreStorageService {
         return 0;
       }
       const parsed = parseInt(stored, 10);
-      return isNaN(parsed) ? 0 : parsed;
+      if (isNaN(parsed) || parsed <= 0) {
+        return 0;
+      }
+      return parsed;
     } catch {
       return 0;
     }
@@ -58,8 +80,14 @@ export class ScoreStorageService {
    * Maintains the list in descending score order, keeps only the top 10,
    * and updates the all-time high score if necessary.
    * Automatically adds createdAt timestamp if not provided.
+   * Rejects scores <= 0.
    */
   saveHighScore(entry: Omit<HighScoreEntry, 'createdAt'> | HighScoreEntry): void {
+    // Reject scores <= 0
+    if (entry.score <= 0) {
+      return;
+    }
+
     const scores = this.loadHighScores();
     const allTimeHigh = this.loadAllTimeHigh();
 
@@ -110,8 +138,14 @@ export class ScoreStorageService {
 
   /**
    * Check if a score qualifies as a high score (top 10 or new all-time high).
+   * Rejects scores <= 0.
    */
   isHighScore(score: number): boolean {
+    // Reject scores <= 0
+    if (score <= 0) {
+      return false;
+    }
+
     const scores = this.loadHighScores();
     if (scores.length < MAX_HIGH_SCORES) {
       return true; // Not yet at max capacity
