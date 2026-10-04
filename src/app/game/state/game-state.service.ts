@@ -36,4 +36,28 @@ export class GameStateService {
   setLevel(level: number): void {
     this.levelSubject.next(level);
   }
+
+  startGame(): void {
+    this.screenSubject.next('countdown');
+  }
+
+  resumeGame(): void {
+    this.screenSubject.next('playing');
+  }
+
+  restartGame(): void {
+    this.scoreSubject.next(0);
+    this.livesSubject.next(3);
+    this.levelSubject.next(1);
+    this.screenSubject.next('countdown');
+  }
+
+  nextLevel(): void {
+    this.levelSubject.next(this.levelSubject.value + 1);
+    this.screenSubject.next('countdown');
+  }
+
+  goToStart(): void {
+    this.screenSubject.next('start');
+  }
 }
