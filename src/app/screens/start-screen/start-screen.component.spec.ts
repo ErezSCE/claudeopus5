@@ -1,196 +1,99 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { StartScreenComponent } from './start-screen.component';
-import { GameStateService } from '../../game/state/game-state.service';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
 import { SettingsStorageService } from '../../core/storage/settings-storage.service';
-import { ScoreStorageService } from '../../core/storage/score-storage.service';
-import { of } from 'rxjs';
+import { GameStateService } from '../../game/state/game-state.service';
+import { hasFocusVisibleRule, usesNaturalTabOrder } from '../../testing/a11y-helpers';
+import { StartScreenComponent } from './start-screen.component';
 
 describe('StartScreenComponent', () => {
-  let component: StartScreenComponent;
   let fixture: ComponentFixture<StartScreenComponent>;
-  let mockGameState: jasmine.SpyObj<GameStateService>;
-  let mockSettingsStorage: jasmine.SpyObj<SettingsStorageService>;
-  let scoreStorageService: ScoreStorageService;
+  let gameState: jasmine.SpyObj<GameStateService>;
+  let root: HTMLElement;
+
+  function create(): void {
+    fixture = TestBed.createComponent(StartScreenComponent);
+    root = fixture.nativeElement;
+    document.body.appendChild(root);
+    fixture.detectChanges();
+  }
 
   beforeEach(async () => {
-    mockGameState = jasmine.createSpyObj('GameStateService', ['startGame']);
-    mockSettingsStorage = jasmine.createSpyObj('SettingsStorageService', [
-      'getMutePreference',
-      'getColorblindMode',
-      'toggleMute',
-      'toggleColorblindMode',
-    ]);
-    mockSettingsStorage.getMutePreference.and.returnValue(false);
-    mockSettingsStorage.getColorblindMode.and.returnValue(false);
-
+    localStorage.clear();
+    gameState = jasmine.createSpyObj<GameStateService>('GameStateService', ['startGame']);
     await TestBed.configureTestingModule({
       imports: [StartScreenComponent],
-      providers: [
-        { provide: GameStateService, useValue: mockGameState },
-        { provide: SettingsStorageService, useValue: mockSettingsStorage },
-        ScoreStorageService,
-      ],
+      providers: [{ provide: GameStateService, useValue: gameState }],
     }).compileComponents();
+  });
 
-    scoreStorageService = TestBed.inject(ScoreStorageService);
-    fixture = TestBed.createComponent(StartScreenComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+  afterEach(() => {
+    root?.remove();
+    localStorage.clear();
   });
 
   it('should create', () => {
-    expect(component).toBeInstanceOf(StartScreenComponent);
+    create();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('[US-028#1] should have focusable start button without explicit tabindex', () => {
-    const startButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--start'
+  it('[US-027#1] re-reads saved top-10 scores from localStorage on load and renders them', () => {
+    localStorage.setItem(
+      'pacman_high_scores',
+      JSON.stringify([
+        { initials: 'AAA', score: 2000, createdAt: '2024-01-01T00:00:00Z' },
+        { initials: 'BBB', score: 1000, createdAt: '2024-01-02T00:00:00Z' },
+      ]),
     );
-    expect(startButton).toBeTruthy();
-    expect(startButton.tagName).toBe('BUTTON');
-    // Native buttons are focusable without explicit tabindex
-    expect(startButton.getAttribute('tabindex')).toBeNull();
+    create();
+    const rows = root.querySelectorAll('.start-screen__score-row');
+    expect(rows.length).toBe(2);
+    expect(rows[0].textContent).toContain('AAA');
+    expect(rows[0].textContent).toContain('2000');
+    expect(rows[1].textContent).toContain('BBB');
   });
 
-  it('[US-028#1] should have focusable settings button without explicit tabindex', () => {
-    const settingsButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--settings'
-    );
-    expect(settingsButton).toBeTruthy();
-    expect(settingsButton.tagName).toBe('BUTTON');
-    expect(settingsButton.getAttribute('tabindex')).toBeNull();
+  it('[US-027#1] displays the persisted all-time high score on load', () => {
+    localStorage.setItem('pacman_all_time_high', '4321');
+    create();
+    expect(root.querySelector('.start-screen__all-time-value')?.textContent).toContain('4321');
   });
 
-  it('[US-028#1] should have focusable mute button without explicit tabindex', () => {
-    const muteButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--mute'
-    );
-    expect(muteButton).toBeTruthy();
-    expect(muteButton.tagName).toBe('BUTTON');
-    expect(muteButton.getAttribute('tabindex')).toBeNull();
+  it('[US-027#1] shows an empty-state message when no scores are saved', () => {
+    create();
+    expect(root.querySelector('.start-screen__no-scores')).toBeTruthy();
   });
 
-  it('[US-028#1] should have focusable colorblind button without explicit tabindex', () => {
-    const colorblindButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--colorblind'
-    );
-    expect(colorblindButton).toBeTruthy();
-    expect(colorblindButton.tagName).toBe('BUTTON');
-    expect(colorblindButton.getAttribute('tabindex')).toBeNull();
+  it('[US-028#1] controls follow natural DOM tab order with no tabindex overrides', () => {
+    create();
+    expect(usesNaturalTabOrder(root)).toBeTrue();
+    const buttons = root.querySelectorAll<HTMLButtonElement>('button');
+    buttons[0].focus();
+    expect(document.activeElement).toBe(buttons[0]);
   });
 
-  it('[US-028#2] should display focus indicator on button focus', () => {
-    const startButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--start'
-    );
-    startButton.focus();
+  it('[US-028#1] Enter/Space activation (native click) calls startGame exactly once', () => {
+    create();
+    const button = root.querySelector<HTMLButtonElement>('.start-screen__button--start')!;
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    button.click();
+    expect(gameState.startGame).toHaveBeenCalledTimes(1);
+  });
+
+  it('[US-028#2] buttons have a visible :focus-visible indicator', () => {
+    create();
+    expect(hasFocusVisibleRule('start-screen__button')).toBeTrue();
+  });
+
+  it('[US-029#1] colorblind toggle switches and persists the preference immediately', () => {
+    create();
+    const settings = TestBed.inject(SettingsStorageService);
+    const toggle = root.querySelector<HTMLButtonElement>('.start-screen__button--colorblind')!;
+    const before = settings.isColorblindModeEnabled();
+    toggle.click();
     fixture.detectChanges();
-
-    const computedStyle = window.getComputedStyle(startButton);
-    // Check that focus-visible styles are applied (outline should be visible)
-    expect(startButton === document.activeElement).toBe(true);
-  });
-
-  it('[US-028#1] should call startGame exactly once when start button is clicked', () => {
-    const startButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--start'
-    );
-    startButton.click();
-    expect(mockGameState.startGame).toHaveBeenCalledTimes(1);
-  });
-
-  it('[US-028#1] should call startGame exactly once when start button is activated with Enter', () => {
-    const startButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--start'
-    ) as HTMLButtonElement;
-    mockGameState.startGame.calls.reset();
-    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-    startButton.dispatchEvent(event);
-    expect(mockGameState.startGame).toHaveBeenCalledTimes(1);
-  });
-
-  it('[US-028#1] should call startGame exactly once when start button is activated with Space', () => {
-    const startButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--start'
-    ) as HTMLButtonElement;
-    mockGameState.startGame.calls.reset();
-    const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
-    startButton.dispatchEvent(event);
-    expect(mockGameState.startGame).toHaveBeenCalledTimes(1);
-  });
-
-  it('[US-028#1] should be keyboard navigable with Tab key', () => {
-    const startButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--start'
-    );
-    const settingsButton = fixture.nativeElement.querySelector(
-      '.start-screen__button--settings'
-    );
-
-    startButton.focus();
-    expect(document.activeElement).toBe(startButton);
-
-    settingsButton.focus();
-    expect(document.activeElement).toBe(settingsButton);
-  });
-
-  it('[ASSIGN-021#1] should load and display high scores from localStorage on init', () => {
-    // Clear localStorage first
-    localStorage.clear();
-
-    // Seed localStorage with high scores
-    const highScores = [
-      { initials: 'AAA', score: 1000 },
-      { initials: 'BBB', score: 900 },
-      { initials: 'CCC', score: 800 },
-    ];
-    localStorage.setItem('highScores', JSON.stringify(highScores));
-
-    // Create a new component instance to trigger ngOnInit
-    const newFixture = TestBed.createComponent(StartScreenComponent);
-    const newComponent = newFixture.componentInstance;
-    newFixture.detectChanges();
-
-    // Check that high scores are displayed
-    const highScoresList = newFixture.nativeElement.querySelector(
-      '.start-screen__high-scores'
-    );
-    expect(highScoresList).toBeTruthy();
-
-    const scoreItems = newFixture.nativeElement.querySelectorAll(
-      '.start-screen__score-item'
-    );
-    expect(scoreItems.length).toBeGreaterThan(0);
-
-    // Verify first score is displayed
-    const firstScoreText = scoreItems[0].textContent;
-    expect(firstScoreText).toContain('AAA');
-    expect(firstScoreText).toContain('1000');
-
-    // Clean up
-    localStorage.clear();
-  });
-
-  it('[ASSIGN-021#1] should display all-time high score on init', () => {
-    // Clear localStorage first
-    localStorage.clear();
-
-    // Seed localStorage with all-time high score
-    localStorage.setItem('allTimeHigh', '5000');
-
-    // Create a new component instance to trigger ngOnInit
-    const newFixture = TestBed.createComponent(StartScreenComponent);
-    const newComponent = newFixture.componentInstance;
-    newFixture.detectChanges();
-
-    // Check that all-time high is displayed
-    const allTimeHighElement = newFixture.nativeElement.querySelector(
-      '.start-screen__all-time-high'
-    );
-    expect(allTimeHighElement).toBeTruthy();
-    expect(allTimeHighElement.textContent).toContain('5000');
-
-    // Clean up
-    localStorage.clear();
+    expect(settings.isColorblindModeEnabled()).toBe(!before);
+    expect(settings.loadSettings().colorblindMode).toBe(!before);
+    expect(toggle.getAttribute('aria-pressed')).toBe(String(!before));
   });
 });

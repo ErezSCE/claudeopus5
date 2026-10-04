@@ -409,8 +409,7 @@ describe('InputService', () => {
       // Verify touch listeners are removed
       expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'touchstart',
-        jasmine.any(Function),
-        jasmine.any(Object)
+        jasmine.any(Function)
       );
       expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'touchend',

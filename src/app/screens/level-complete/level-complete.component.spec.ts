@@ -1,77 +1,43 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { LevelCompleteComponent } from './level-complete.component';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
 import { GameStateService } from '../../game/state/game-state.service';
-import { of } from 'rxjs';
+import { hasFocusVisibleRule, usesNaturalTabOrder } from '../../testing/a11y-helpers';
+import { LevelCompleteComponent } from './level-complete.component';
 
 describe('LevelCompleteComponent', () => {
-  let component: LevelCompleteComponent;
   let fixture: ComponentFixture<LevelCompleteComponent>;
-  let mockGameState: jasmine.SpyObj<GameStateService>;
+  let gameState: jasmine.SpyObj<GameStateService>;
+  let root: HTMLElement;
 
   beforeEach(async () => {
-    mockGameState = jasmine.createSpyObj('GameStateService', [
-      'nextLevel',
-    ]);
-    mockGameState.score$ = of(1000);
-    mockGameState.level$ = of(1);
-
+    gameState = jasmine.createSpyObj<GameStateService>('GameStateService', ['nextLevel']);
     await TestBed.configureTestingModule({
       imports: [LevelCompleteComponent],
-      providers: [{ provide: GameStateService, useValue: mockGameState }],
+      providers: [{ provide: GameStateService, useValue: gameState }],
     }).compileComponents();
-
     fixture = TestBed.createComponent(LevelCompleteComponent);
-    component = fixture.componentInstance;
+    root = fixture.nativeElement;
+    document.body.appendChild(root);
     fixture.detectChanges();
   });
+
+  afterEach(() => root.remove());
 
   it('should create', () => {
-    expect(component).toBeInstanceOf(LevelCompleteComponent);
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('[US-028#1] should have focusable next level button with tabindex', () => {
-    const nextButton = fixture.nativeElement.querySelector(
-      '.level-complete__button--next'
-    );
-    expect(nextButton).toBeTruthy();
-    expect(nextButton.getAttribute('tabindex')).toBe('0');
+  it('[US-028#1] next-level button is keyboard focusable and activates exactly once', () => {
+    expect(usesNaturalTabOrder(root)).toBeTrue();
+    const button = root.querySelector<HTMLButtonElement>('.level-complete__button')!;
+    button.focus();
+    expect(document.activeElement).toBe(button);
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    button.click();
+    expect(gameState.nextLevel).toHaveBeenCalledTimes(1);
   });
 
-  it('[US-028#2] should display focus indicator on button focus', () => {
-    const nextButton = fixture.nativeElement.querySelector(
-      '.level-complete__button--next'
-    );
-    nextButton.focus();
-    fixture.detectChanges();
-
-    expect(nextButton === document.activeElement).toBe(true);
-  });
-
-  it('[US-028#1] should call nextLevel when next button is clicked', () => {
-    const nextButton = fixture.nativeElement.querySelector(
-      '.level-complete__button--next'
-    );
-    nextButton.click();
-    expect(mockGameState.nextLevel).toHaveBeenCalled();
-  });
-
-  it('[US-028#1] should call nextLevel when next button is activated with Enter', () => {
-    const nextButton = fixture.nativeElement.querySelector(
-      '.level-complete__button--next'
-    );
-    const event = new KeyboardEvent('keydown', { key: 'Enter' });
-    nextButton.dispatchEvent(event);
-    nextButton.click();
-    expect(mockGameState.nextLevel).toHaveBeenCalled();
-  });
-
-  it('[US-028#1] should call nextLevel when next button is activated with Space', () => {
-    const nextButton = fixture.nativeElement.querySelector(
-      '.level-complete__button--next'
-    );
-    const event = new KeyboardEvent('keydown', { key: ' ' });
-    nextButton.dispatchEvent(event);
-    nextButton.click();
-    expect(mockGameState.nextLevel).toHaveBeenCalled();
+  it('[US-028#2] button has a visible :focus-visible indicator', () => {
+    expect(hasFocusVisibleRule('level-complete__button')).toBeTrue();
   });
 });

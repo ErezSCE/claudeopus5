@@ -1,209 +1,40 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { GameStateService } from '../../game/state/game-state.service';
-import { SettingsStorageService } from '../../core/storage/settings-storage.service';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-/**
- * Pause overlay component (MOD-PAUSE-OVERLAY).
- * Displays pause menu with options to resume or restart.
- * Supports keyboard navigation with visible focus indicators.
- */
+import { GameStateService } from '../../game/state/game-state.service';
+
+/** Pause overlay (MOD-PAUSE-OVERLAY): resume or restart the current game. */
 @Component({
   selector: 'app-pause-overlay',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="pause-overlay">
-      <div class="pause-overlay__container">
-        <h1 class="pause-overlay__title">PAUSED</h1>
-        
-        <div class="pause-overlay__buttons">
-          <button 
-            class="pause-overlay__button pause-overlay__button--resume"
-            tabindex="0"
-            (click)="onResume()"
-            (keydown.enter)="onResume()"
-            (keydown.space)="onResume()">
-            Resume Game
-          </button>
-          
-          <button 
-            class="pause-overlay__button pause-overlay__button--restart"
-            tabindex="1"
-            (click)="onRestart()"
-            (keydown.enter)="onRestart()"
-            (keydown.space)="onRestart()">
-            Restart Game
-          </button>
-          
-          <button 
-            class="pause-overlay__button pause-overlay__button--menu"
-            tabindex="2"
-            (click)="onMainMenu()"
-            (keydown.enter)="onMainMenu()"
-            (keydown.space)="onMainMenu()">
-            Main Menu
-          </button>
-
-          <button 
-            class="pause-overlay__button pause-overlay__button--colorblind"
-            tabindex="3"
-            (click)="onToggleColorblind()"
-            (keydown.enter)="onToggleColorblind()"
-            (keydown.space)="onToggleColorblind()">
-            Toggle Colorblind Mode
-          </button>
-        </div>
-
-        <div class="pause-overlay__hint">
-          <p class="pause-overlay__hint-text">Press P to resume</p>
-        </div>
-      </div>
-    </div>
+    <section class="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+      <h2 id="pause-title" class="pause-overlay__title">Paused</h2>
+      <button type="button" class="pause-overlay__button pause-overlay__button--resume" (click)="onResume()">
+        Resume
+      </button>
+      <button type="button" class="pause-overlay__button pause-overlay__button--restart" (click)="onRestart()">
+        Restart
+      </button>
+    </section>
   `,
   styles: [
     `
-      .pause-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-      }
-
-      .pause-overlay__container {
-        text-align: center;
-        padding: 2rem;
-        max-width: 500px;
-        background: linear-gradient(135deg, #2e1a2e 0%, #1a162e 100%);
-        border-radius: 8px;
-        border: 3px solid #ff00ff;
-        color: #fff;
-        font-family: 'Arial', sans-serif;
-      }
-
-      .pause-overlay__title {
-        font-size: 3rem;
-        margin: 0 0 2rem 0;
-        color: #ff00ff;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        letter-spacing: 2px;
-      }
-
-      .pause-overlay__buttons {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        margin: 2rem 0;
-      }
-
-      .pause-overlay__button {
-        padding: 1rem 2rem;
-        font-size: 1.1rem;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-
-      .pause-overlay__button--resume {
-        background: #00ff00;
-        color: #000;
-      }
-
-      .pause-overlay__button--resume:hover {
-        background: #00ff00;
-        transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(0, 255, 0, 0.4);
-      }
-
-      .pause-overlay__button--restart {
-        background: #ff00ff;
-        color: #fff;
-      }
-
-      .pause-overlay__button--restart:hover {
-        background: #ff00ff;
-        transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(255, 0, 255, 0.4);
-      }
-
-      .pause-overlay__button--menu {
-        background: #ff00ff;
-        color: #fff;
-      }
-
-      .pause-overlay__button--menu:hover {
-        background: #ff00ff;
-        transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(255, 0, 255, 0.4);
-      }
-
-      .pause-overlay__button--colorblind {
-        background: #00ffff;
-        color: #000;
-      }
-
-      .pause-overlay__button--colorblind:hover {
-        background: #00ffff;
-        transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(0, 255, 255, 0.4);
-      }
-
-      .pause-overlay__button:focus-visible {
-        outline: 3px solid #ffff00;
-        outline-offset: 2px;
-      }
-
-      .pause-overlay__hint {
-        margin-top: 2rem;
-        color: #ffff00;
-        font-size: 0.9rem;
-      }
-
-      .pause-overlay__hint-text {
-        margin: 0;
-      }
-
-      @media (max-width: 600px) {
-        .pause-overlay__title {
-          font-size: 2rem;
-        }
-
-        .pause-overlay__button {
-          padding: 0.8rem 1.5rem;
-          font-size: 1rem;
-        }
-      }
+      .pause-overlay { display: flex; flex-direction: column; align-items: center; gap: 1rem; color: #fff; }
+      .pause-overlay__button { min-width: 10rem; padding: 0.75rem 1.5rem; font: inherit; color: #000; background: #ffd800; border: 0; border-radius: 4px; cursor: pointer; }
+      .pause-overlay__button:focus { outline: none; }
+      .pause-overlay__button:focus-visible { outline: 3px solid #00e5ff; outline-offset: 3px; }
     `,
   ],
 })
 export class PauseOverlayComponent {
-  constructor(
-    private gameState: GameStateService,
-    private settingsStorage: SettingsStorageService
-  ) {}
+  private readonly gameState = inject(GameStateService);
 
   onResume(): void {
-    this.gameState.setScreen('playing');
+    this.gameState.resumeGame();
   }
 
   onRestart(): void {
-    this.gameState.setScreen('countdown');
-  }
-
-  onMainMenu(): void {
-    this.gameState.setScreen('start');
-  }
-
-  onToggleColorblind(): void {
-    this.settingsStorage.toggleColorblindMode();
+    this.gameState.restartGame();
   }
 }

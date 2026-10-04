@@ -1,106 +1,54 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { PauseOverlayComponent } from './pause-overlay.component';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
 import { GameStateService } from '../../game/state/game-state.service';
+import { hasFocusVisibleRule, usesNaturalTabOrder } from '../../testing/a11y-helpers';
+import { PauseOverlayComponent } from './pause-overlay.component';
 
 describe('PauseOverlayComponent', () => {
-  let component: PauseOverlayComponent;
   let fixture: ComponentFixture<PauseOverlayComponent>;
-  let mockGameState: jasmine.SpyObj<GameStateService>;
+  let gameState: jasmine.SpyObj<GameStateService>;
+  let root: HTMLElement;
 
   beforeEach(async () => {
-    mockGameState = jasmine.createSpyObj('GameStateService', [
-      'resumeGame',
-      'restartGame',
-    ]);
-
+    gameState = jasmine.createSpyObj<GameStateService>('GameStateService', ['resumeGame', 'restartGame']);
     await TestBed.configureTestingModule({
       imports: [PauseOverlayComponent],
-      providers: [{ provide: GameStateService, useValue: mockGameState }],
+      providers: [{ provide: GameStateService, useValue: gameState }],
     }).compileComponents();
-
     fixture = TestBed.createComponent(PauseOverlayComponent);
-    component = fixture.componentInstance;
+    root = fixture.nativeElement;
+    document.body.appendChild(root);
     fixture.detectChanges();
   });
+
+  afterEach(() => root.remove());
 
   it('should create', () => {
-    expect(component).toBeInstanceOf(PauseOverlayComponent);
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('[US-028#1] should have focusable resume button with tabindex', () => {
-    const resumeButton = fixture.nativeElement.querySelector(
-      '.pause-overlay__button--resume'
-    );
-    expect(resumeButton).toBeTruthy();
-    expect(resumeButton.getAttribute('tabindex')).toBe('0');
+  it('[US-028#1] resume comes before restart in natural tab order', () => {
+    expect(usesNaturalTabOrder(root)).toBeTrue();
+    const buttons = root.querySelectorAll('button');
+    expect(buttons[0].classList).toContain('pause-overlay__button--resume');
+    expect(buttons[1].classList).toContain('pause-overlay__button--restart');
   });
 
-  it('[US-028#1] should have focusable restart button with tabindex', () => {
-    const restartButton = fixture.nativeElement.querySelector(
-      '.pause-overlay__button--restart'
-    );
-    expect(restartButton).toBeTruthy();
-    expect(restartButton.getAttribute('tabindex')).toBe('1');
+  it('[US-028#1] keyboard activation of resume calls resumeGame exactly once', () => {
+    const button = root.querySelector<HTMLButtonElement>('.pause-overlay__button--resume')!;
+    button.focus();
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    button.click();
+    expect(document.activeElement).toBe(button);
+    expect(gameState.resumeGame).toHaveBeenCalledTimes(1);
   });
 
-  it('[US-028#2] should display focus indicator on button focus', () => {
-    const resumeButton = fixture.nativeElement.querySelector(
-      '.pause-overlay__button--resume'
-    );
-    resumeButton.focus();
-    fixture.detectChanges();
-
-    expect(resumeButton === document.activeElement).toBe(true);
+  it('[US-028#1] activating restart calls restartGame exactly once', () => {
+    root.querySelector<HTMLButtonElement>('.pause-overlay__button--restart')!.click();
+    expect(gameState.restartGame).toHaveBeenCalledTimes(1);
   });
 
-  it('[US-028#1] should call resumeGame when resume button is clicked', () => {
-    const resumeButton = fixture.nativeElement.querySelector(
-      '.pause-overlay__button--resume'
-    );
-    resumeButton.click();
-    expect(mockGameState.resumeGame).toHaveBeenCalled();
-  });
-
-  it('[US-028#1] should call resumeGame when resume button is activated with Enter', () => {
-    const resumeButton = fixture.nativeElement.querySelector(
-      '.pause-overlay__button--resume'
-    );
-    const event = new KeyboardEvent('keydown', { key: 'Enter' });
-    resumeButton.dispatchEvent(event);
-    resumeButton.click();
-    expect(mockGameState.resumeGame).toHaveBeenCalled();
-  });
-
-  it('[US-028#1] should call resumeGame when resume button is activated with Space', () => {
-    const resumeButton = fixture.nativeElement.querySelector(
-      '.pause-overlay__button--resume'
-    );
-    const event = new KeyboardEvent('keydown', { key: ' ' });
-    resumeButton.dispatchEvent(event);
-    resumeButton.click();
-    expect(mockGameState.resumeGame).toHaveBeenCalled();
-  });
-
-  it('[US-028#1] should call restartGame when restart button is clicked', () => {
-    const restartButton = fixture.nativeElement.querySelector(
-      '.pause-overlay__button--restart'
-    );
-    restartButton.click();
-    expect(mockGameState.restartGame).toHaveBeenCalled();
-  });
-
-  it('[US-028#1] should be keyboard navigable with Tab key', () => {
-    const resumeButton = fixture.nativeElement.querySelector(
-      '.pause-overlay__button--resume'
-    );
-    const restartButton = fixture.nativeElement.querySelector(
-      '.pause-overlay__button--restart'
-    );
-
-    resumeButton.focus();
-    expect(document.activeElement).toBe(resumeButton);
-
-    restartButton.focus();
-    expect(document.activeElement).toBe(restartButton);
+  it('[US-028#2] buttons have a visible :focus-visible indicator', () => {
+    expect(hasFocusVisibleRule('pause-overlay__button')).toBeTrue();
   });
 });

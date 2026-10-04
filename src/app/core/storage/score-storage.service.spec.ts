@@ -101,7 +101,7 @@ describe('ScoreStorageService', () => {
       // Add 15 scores
       for (let i = 0; i < 15; i++) {
         service.saveHighScore({
-          initials: `${String(i).padStart(3, '0')}`,
+          initials: String.fromCharCode(65 + i).repeat(3),
           score: 1000 - i * 10,
         });
       }
@@ -210,7 +210,7 @@ describe('ScoreStorageService', () => {
       // Fill with 10 scores
       for (let i = 0; i < 10; i++) {
         service.saveHighScore({
-          initials: `${String(i).padStart(3, '0')}`,
+          initials: String.fromCharCode(65 + i).repeat(3),
           score: 1000 - i * 10,
         });
       }

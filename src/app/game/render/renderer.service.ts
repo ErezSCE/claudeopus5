@@ -338,7 +338,7 @@ export class RendererService {
    * Uses the cached colorblind mode value for performance.
    */
   getGhostColor(ghostName: 'blinky' | 'pinky' | 'inky' | 'clyde'): string {
-    const isColorblindMode = this.settingsStorage.getColorblindMode();
+    const isColorblindMode = this.settingsStorage.isColorblindModeEnabled();
     const palette = isColorblindMode ? GHOST_COLORS_COLORBLIND : GHOST_COLORS_STANDARD;
     return palette[ghostName];
   }

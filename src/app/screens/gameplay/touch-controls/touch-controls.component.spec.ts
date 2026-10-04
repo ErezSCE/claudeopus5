@@ -129,17 +129,21 @@ describe('TouchControlsComponent', () => {
 
     it('[ASSIGN-022#1] should call setDirection only once per pointer event', () => {
       spyOn(inputService, 'setDirection');
-      component.onButtonDown('up');
+      const fixture = TestBed.createComponent(TouchControlsComponent);
+      fixture.detectChanges();
+      const upButton: HTMLButtonElement = fixture.nativeElement.querySelector('.touch-button-up');
+      upButton.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
       expect(inputService.setDirection).toHaveBeenCalledTimes(1);
       expect(inputService.setDirection).toHaveBeenCalledWith('up');
     });
 
-    it('[ASSIGN-022#1] should use :focus-visible for keyboard focus styling', () => {
-      // The component uses :focus-visible in its CSS for keyboard-only focus
-      // This is verified by checking the component's styles property
-      const styles = component['styles'];
-      expect(styles).toBeDefined();
-      expect(styles).toContain(':focus-visible');
+    it('[ASSIGN-022#1] should use :focus-visible (not :focus) for keyboard focus styling', () => {
+      const css = Array.from(document.querySelectorAll('style'))
+        .map((el) => el.textContent ?? '')
+        .filter((text) => text.includes('.touch-button'))
+        .join('\n');
+      expect(css).toContain(':focus-visible');
+      expect(/:focus(?!-visible)/.test(css)).toBeFalse();
     });
   });
 });
