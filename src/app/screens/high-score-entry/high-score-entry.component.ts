@@ -53,7 +53,7 @@ import { ScoreStorageService } from '../../core/storage/score-storage.service';
 
         <div class="high-score-entry__buttons">
           <button 
-            class="high-score-entry__button high-score-entry__button--primary"
+            class="high-score-entry__button high-score-entry__button--submit"
             tabindex="3"
             (click)="onSubmit()"
             (keydown.enter)="onSubmit()"
@@ -174,12 +174,12 @@ import { ScoreStorageService } from '../../core/storage/score-storage.service';
         letter-spacing: 1px;
       }
 
-      .high-score-entry__button--primary {
+      .high-score-entry__button--submit {
         background: #00ff00;
         color: #000;
       }
 
-      .high-score-entry__button--primary:hover {
+      .high-score-entry__button--submit:hover {
         background: #00ff00;
         transform: scale(1.05);
         box-shadow: 0 4px 12px rgba(0, 255, 0, 0.4);
@@ -269,6 +269,6 @@ export class HighScoreEntryComponent implements OnInit {
       initials,
       score: this.score,
     });
-    this.gameState.setScreen('start');
+    this.gameState.goToStart();
   }
 }

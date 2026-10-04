@@ -17,7 +17,7 @@ import { GameStateService } from '../../game/state/game-state.service';
         
         <div class="pause-overlay__buttons">
           <button 
-            class="pause-overlay__button pause-overlay__button--primary"
+            class="pause-overlay__button pause-overlay__button--resume"
             tabindex="0"
             (click)="onResume()"
             (keydown.enter)="onResume()"
@@ -26,7 +26,7 @@ import { GameStateService } from '../../game/state/game-state.service';
           </button>
           
           <button 
-            class="pause-overlay__button pause-overlay__button--secondary"
+            class="pause-overlay__button pause-overlay__button--restart"
             tabindex="1"
             (click)="onRestart()"
             (keydown.enter)="onRestart()"
@@ -35,7 +35,7 @@ import { GameStateService } from '../../game/state/game-state.service';
           </button>
           
           <button 
-            class="pause-overlay__button pause-overlay__button--secondary"
+            class="pause-overlay__button pause-overlay__button--menu"
             tabindex="2"
             (click)="onMainMenu()"
             (keydown.enter)="onMainMenu()"
@@ -103,23 +103,34 @@ import { GameStateService } from '../../game/state/game-state.service';
         letter-spacing: 1px;
       }
 
-      .pause-overlay__button--primary {
+      .pause-overlay__button--resume {
         background: #00ff00;
         color: #000;
       }
 
-      .pause-overlay__button--primary:hover {
+      .pause-overlay__button--resume:hover {
         background: #00ff00;
         transform: scale(1.05);
         box-shadow: 0 4px 12px rgba(0, 255, 0, 0.4);
       }
 
-      .pause-overlay__button--secondary {
+      .pause-overlay__button--restart {
         background: #ff00ff;
         color: #fff;
       }
 
-      .pause-overlay__button--secondary:hover {
+      .pause-overlay__button--restart:hover {
+        background: #ff00ff;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(255, 0, 255, 0.4);
+      }
+
+      .pause-overlay__button--menu {
+        background: #ff00ff;
+        color: #fff;
+      }
+
+      .pause-overlay__button--menu:hover {
         background: #ff00ff;
         transform: scale(1.05);
         box-shadow: 0 4px 12px rgba(255, 0, 255, 0.4);

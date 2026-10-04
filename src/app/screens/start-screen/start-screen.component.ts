@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { GameStateService } from '../../game/state/game-state.service';
+import { SettingsStorageService } from '../../core/storage/settings-storage.service';
 
 /**
  * Start screen component (MOD-START-SCREEN).
@@ -21,12 +22,30 @@ import { GameStateService } from '../../game/state/game-state.service';
 
         <div class="start-screen__buttons">
           <button 
-            class="start-screen__button start-screen__button--primary"
+            class="start-screen__button start-screen__button--start"
             tabindex="0"
             (click)="onStartGame()"
             (keydown.enter)="onStartGame()"
             (keydown.space)="onStartGame()">
             Start Game
+          </button>
+          <button 
+            class="start-screen__button start-screen__button--settings"
+            tabindex="1"
+            (click)="onSettings()">
+            Settings
+          </button>
+          <button 
+            class="start-screen__button start-screen__button--mute"
+            tabindex="2"
+            (click)="onToggleMute()">
+            {{ isMuted ? 'Unmute' : 'Mute' }}
+          </button>
+          <button 
+            class="start-screen__button start-screen__button--colorblind"
+            tabindex="3"
+            (click)="onToggleColorblind()">
+            {{ isColorblind ? 'Normal Colors' : 'Colorblind Mode' }}
           </button>
         </div>
 
@@ -162,10 +181,35 @@ import { GameStateService } from '../../game/state/game-state.service';
     `,
   ],
 })
-export class StartScreenComponent {
-  constructor(private gameState: GameStateService) {}
+export class StartScreenComponent implements OnInit {
+  isMuted = false;
+  isColorblind = false;
+
+  constructor(
+    private gameState: GameStateService,
+    private settingsStorage: SettingsStorageService
+  ) {}
+
+  ngOnInit(): void {
+    this.isMuted = this.settingsStorage.getMutePreference();
+    this.isColorblind = this.settingsStorage.getColorblindMode();
+  }
 
   onStartGame(): void {
-    this.gameState.setScreen('countdown');
+    this.gameState.startGame();
+  }
+
+  onSettings(): void {
+    // Settings action
+  }
+
+  onToggleMute(): void {
+    this.settingsStorage.toggleMute();
+    this.isMuted = this.settingsStorage.getMutePreference();
+  }
+
+  onToggleColorblind(): void {
+    this.settingsStorage.toggleColorblindMode();
+    this.isColorblind = this.settingsStorage.getColorblindMode();
   }
 }

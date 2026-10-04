@@ -22,7 +22,7 @@ import { GameStateService } from '../../game/state/game-state.service';
 
         <div class="game-over__buttons">
           <button 
-            class="game-over__button game-over__button--primary"
+            class="game-over__button game-over__button--restart"
             tabindex="0"
             (click)="onRestart()"
             (keydown.enter)="onRestart()"
@@ -31,7 +31,7 @@ import { GameStateService } from '../../game/state/game-state.service';
           </button>
           
           <button 
-            class="game-over__button game-over__button--secondary"
+            class="game-over__button game-over__button--menu"
             tabindex="1"
             (click)="onMainMenu()"
             (keydown.enter)="onMainMenu()"
@@ -109,23 +109,23 @@ import { GameStateService } from '../../game/state/game-state.service';
         letter-spacing: 1px;
       }
 
-      .game-over__button--primary {
+      .game-over__button--restart {
         background: #00ff00;
         color: #000;
       }
 
-      .game-over__button--primary:hover {
+      .game-over__button--restart:hover {
         background: #00ff00;
         transform: scale(1.05);
         box-shadow: 0 4px 12px rgba(0, 255, 0, 0.4);
       }
 
-      .game-over__button--secondary {
+      .game-over__button--menu {
         background: #ff00ff;
         color: #fff;
       }
 
-      .game-over__button--secondary:hover {
+      .game-over__button--menu:hover {
         background: #ff00ff;
         transform: scale(1.05);
         box-shadow: 0 4px 12px rgba(255, 0, 255, 0.4);

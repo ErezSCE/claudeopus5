@@ -27,12 +27,12 @@ import { GameStateService } from '../../game/state/game-state.service';
 
         <div class="level-complete__buttons">
           <button 
-            class="level-complete__button level-complete__button--primary"
+            class="level-complete__button level-complete__button--next"
             tabindex="0"
-            (click)="onContinue()"
-            (keydown.enter)="onContinue()"
-            (keydown.space)="onContinue()">
-            Continue
+            (click)="onNextLevel()"
+            (keydown.enter)="onNextLevel()"
+            (keydown.space)="onNextLevel()">
+            Next Level
           </button>
         </div>
       </div>
@@ -118,12 +118,12 @@ import { GameStateService } from '../../game/state/game-state.service';
         letter-spacing: 1px;
       }
 
-      .level-complete__button--primary {
+      .level-complete__button--next {
         background: #00ff00;
         color: #000;
       }
 
-      .level-complete__button--primary:hover {
+      .level-complete__button--next:hover {
         background: #00ff00;
         transform: scale(1.05);
         box-shadow: 0 4px 12px rgba(0, 255, 0, 0.4);
@@ -153,7 +153,8 @@ export class LevelCompleteComponent {
 
   constructor(private gameState: GameStateService) {}
 
-  onContinue(): void {
+  onNextLevel(): void {
+    this.gameState.nextLevel();
     this.gameState.setScreen('countdown');
   }
 }
