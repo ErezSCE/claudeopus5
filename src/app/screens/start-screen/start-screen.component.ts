@@ -1,18 +1,49 @@
-// [STUB]
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-import { ScoreStorageService } from '../../core/storage/score-storage.service';
-import { HighScoreEntry } from '../../shared/types';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { GameStateService } from '../../game/state/game-state.service';
 
 /**
  * Start screen component (MOD-START-SCREEN).
- * Scaffold stub: displays the start screen and transitions to countdown on input.
- * Integrates with ScoreStorageService to load and display high scores.
+ * Displays the main menu with options to start the game.
+ * Supports keyboard navigation with visible focus indicators.
  */
 @Component({
   selector: 'app-start-screen',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div class="start-screen">Start Screen Stub</div>`,
+  template: `
+    <div class="start-screen">
+      <div class="start-screen__container">
+        <h1 class="start-screen__title">PAC-MAN</h1>
+        
+        <div class="start-screen__subtitle">
+          <span class="start-screen__subtitle-text">Press Start to Begin</span>
+        </div>
+
+        <div class="start-screen__buttons">
+          <button 
+            class="start-screen__button start-screen__button--primary"
+            tabindex="0"
+            (click)="onStartGame()"
+            (keydown.enter)="onStartGame()"
+            (keydown.space)="onStartGame()">
+            Start Game
+          </button>
+        </div>
+
+        <div class="start-screen__instructions">
+          <p class="start-screen__instruction-text">
+            Use Arrow Keys or WASD to move
+          </p>
+          <p class="start-screen__instruction-text">
+            Press P to pause
+          </p>
+          <p class="start-screen__instruction-text">
+            Eat all dots to complete the level
+          </p>
+        </div>
+      </div>
+    </div>
+  `,
   styles: [
     `
       .start-screen {
@@ -21,19 +52,120 @@ import { HighScoreEntry } from '../../shared/types';
         justify-content: center;
         width: 100%;
         height: 100%;
+        background: linear-gradient(135deg, #2e1a2e 0%, #1a162e 100%);
+        color: #fff;
+        font-family: 'Arial', sans-serif;
+      }
+
+      .start-screen__container {
+        text-align: center;
+        padding: 2rem;
+        max-width: 600px;
+      }
+
+      .start-screen__title {
+        font-size: 4rem;
+        margin: 0 0 1.5rem 0;
+        color: #ff00ff;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        letter-spacing: 3px;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        50% {
+          text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+        }
+      }
+
+      .start-screen__subtitle {
+        margin: 2rem 0;
+      }
+
+      .start-screen__subtitle-text {
+        font-size: 1.5rem;
+        color: #ffff00;
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+
+      .start-screen__buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin: 2rem 0;
+      }
+
+      .start-screen__button {
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .start-screen__button--primary {
+        background: #00ff00;
+        color: #000;
+      }
+
+      .start-screen__button--primary:hover {
+        background: #00ff00;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 255, 0, 0.4);
+      }
+
+      .start-screen__button:focus-visible {
+        outline: 3px solid #ffff00;
+        outline-offset: 2px;
+      }
+
+      .start-screen__instructions {
+        margin-top: 3rem;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 1.5rem;
+        border-radius: 8px;
+      }
+
+      .start-screen__instruction-text {
+        margin: 0.5rem 0;
+        font-size: 0.95rem;
+        color: #00ff00;
+        letter-spacing: 0.5px;
+      }
+
+      @media (max-width: 600px) {
+        .start-screen__title {
+          font-size: 2.5rem;
+        }
+
+        .start-screen__subtitle-text {
+          font-size: 1.1rem;
+        }
+
+        .start-screen__button {
+          padding: 0.8rem 1.5rem;
+          font-size: 1rem;
+        }
+
+        .start-screen__instruction-text {
+          font-size: 0.85rem;
+        }
       }
     `,
   ],
 })
-export class StartScreenComponent implements OnInit {
-  highScores: HighScoreEntry[] = [];
-  allTimeHigh: number = 0;
+export class StartScreenComponent {
+  constructor(private gameState: GameStateService) {}
 
-  constructor(private scoreStorage: ScoreStorageService) {}
-
-  ngOnInit(): void {
-    // Load high scores and all-time high on component initialization
-    this.highScores = this.scoreStorage.loadHighScores();
-    this.allTimeHigh = this.scoreStorage.loadAllTimeHigh();
+  onStartGame(): void {
+    this.gameState.setScreen('countdown');
   }
 }
