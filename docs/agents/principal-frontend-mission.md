@@ -1,57 +1,44 @@
-# Principal Frontend Developer Mission Report — ASSIGN-001
+# Principal Frontend Developer Mission Report — ASSIGN-004
 
 **Agent**: principal-frontend  
-**Generated**: 2026-10-04T14:58:27.878Z
+**Generated**: 2026-10-04T15:09:55.313Z
 
 ---
 
 ## Branch: claudeopus5/chore/scaffold
 
-## Assignment: ASSIGN-001
+## Assignment: ASSIGN-004
 
 ## Files Changed
 
-- **created** `package.json` — Angular 17 dependencies plus the start, build and test scripts named in the repo contract. Puppeteer is included so headless tests have a Chrome to run.
-- **created** `angular.json` — esbuild application builder with standalone components. Production build has bundle budgets (initial: 1MB warning, 2MB error) and the service worker turned on. Karma is set up for tests.
-- **created** `tsconfig.json` — Strict TypeScript settings and strict Angular template checks.
-- **created** `tsconfig.app.json` — App build TypeScript config, entry point src/main.ts.
-- **created** `tsconfig.spec.json` — TypeScript config for the Jasmine spec files.
-- **created** `karma.conf.js` — Karma config that uses Puppeteer's Chrome and defines a no-sandbox 'ChromeHeadless' launcher, so the contract test command runs in a container.
-- **created** `ngsw-config.json` — Service worker config that pre-caches the app files and assets (including audio) for offline play.
-- **created** `src/index.html` — HTML page with viewport, theme-color, manifest link and the <app-root> host element.
-- **created** `src/manifest.webmanifest` — Web app manifest for installing the game as a PWA.
-- **created** `src/styles.css` — Global colour and font variables, a base reset, a visible :focus-visible outline and reduced-motion support.
-- **created** `src/assets/.gitkeep` — Keeps the empty assets folder in git so the build finds it.
-- **created** `src/main.ts` — MOD-MAIN (frozen): starts AppComponent with provideServiceWorker (production only) and exports the startup promise as default. No router, because screens are switched by game state.
-- **created** `src/app/shared/types.ts` — MOD-SHARED-TYPES (frozen): Direction, Tile, GhostName, GhostState, Mode, GameScreen, HighScoreEntry, Fruit, GhostCollisionResult.
-- **created** `src/app/app.component.ts` — MOD-APP-COMPONENT placeholder: standalone root component using OnPush, showing the current GameScreen. The assignment that owns it will connect the screens and GameStateService.
-- **created** `src/app/app.component.spec.ts` — Tests tagged [US-035#1] and [US-035#2]: the shell starts on the start screen and is created without extra providers.
+- **modified** `src/app/game/engine/game-engine.service.ts` — Replaced the stub with a working GameEngineService. The loop uses requestAnimationFrame (run outside Angular's change detection) and advances the game in fixed 1000/60 ms steps, adding each frame's elapsed time to a running total. Very long frames are capped at 250 ms so the game can't fall too far behind. Each step applies the newest queued direction and moves Pac-Man tile by tile using MAZE_LAYOUT: he only turns into walkable tiles, can reverse mid-tile, stops in front of walls (and never enters ghost-house or door tiles), and wraps through the tunnel. After each step it emits tick$ (for collision and timer hooks); once per animation frame it emits frame$ with an interpolation value for the renderer. Public methods: start/stop/pause/resume, setDirection, bindDirectionStream, plus pacman, ticks and isRunning.
+- **modified** `src/app/game/engine/game-engine.service.spec.ts` — Jasmine specs with a mocked requestAnimationFrame. They check that the update count stays at about 60 per second at 30, 60, 75, 144 and 240fps and with uneven frame timing, that long frames are capped, that tick$ fires once per step, and that at 60Hz each frame does exactly one update. They also cover pause/resume/stop, Pac-Man spawning on a corridor tile, frame$ values staying between 0 and 1, the direction stream being applied within one frame, refusing to turn into walls, stopping in front of walls, and taking a queued turn at the next junction. Test names are tagged for US-001#1/#2, US-002#1/#2 and US-003#1/#2.
+- **modified** `src/app/game/entities/ghost.ts` — One-line fix to a scaffold compile error: the default state was 'normal', which isn't a valid GhostState in the frozen shared types. Changed to 'in-house', the state ghosts start in. Without this nothing compiled, so neither the test suite nor the build could run.
 
 ## Notes
 
-The project builds and its tests pass. `npm run build` produces an initial bundle of 135 kB raw (about 42 kB transferred), well under the 2MB limit. `npm test` runs 2 tests in headless Chrome and both pass.
+The game engine is in place: a fixed 60-steps-per-second loop, Pac-Man movement that respects the maze walls, and input handling. The full test suite passes (82 tests) and the production build succeeds (about 135 kB initial bundle).
 
-Things the other assignments need to know:
-- **Frozen files:** `src/main.ts`, `angular.json` and `src/app/shared/types.ts` must not be edited from now on.
-- **No router:** `main.ts` doesn't set one up. `AppComponent` should pick which screen to show based on `GameStateService`'s `GameScreen` value.
-- **Bundle size:** to keep it small, load non-critical screens (game-over, high-score entry, level-complete) with `@defer` blocks.
-- **App shell:** `AppComponent` is still a placeholder. Its owner should replace its body with the real screen switching.
-- **Root-level services:** services should use `@Injectable({providedIn: 'root'})`. This works because `main.ts` only registers the service worker.
-- **Test browser:** there's no system Chrome in this environment, so `karma.conf.js` points `CHROME_BIN` at Puppeteer's Chrome and redefines the `ChromeHeadless` launcher with `--no-sandbox`.
-- **Leftover dependency:** `@angular/platform-browser-dynamic` is only needed for tests but sits in `dependencies`. It doesn't increase the production bundle.
-- **Node warning:** the CLI warns about Node v25 because it is an odd-numbered release, but it works.
+One change outside my assignment: `ghost.ts` didn't compile because its default state was 'normal', which isn't a valid value in the shared types. I changed it to 'in-house' (where ghosts start); without that, neither the tests nor the build could run.
 
-TASK-068 (bundle-size optimisation) is only partly done here: the budgets are enforced and the bundle starts small, but the screens to lazy-load don't exist yet.
+Three things are still to be connected by other assignments:
+- **Keyboard input:** InputService doesn't exist yet, so the engine can't import it. Instead it exposes `bindDirectionStream(direction$)` and `setDirection()`. The gameplay screen (or InputService when it lands) should call `bindDirectionStream` and then `start()`. Until then, arrow keys and WASD don't actually move Pac-Man in the running app; the tests drive the engine directly.
+- **Collisions and timers:** the collision service's constructor still throws, so the engine doesn't inject it. Collision checks and the later level, scared and scatter/chase timers should subscribe to `tick$`, which fires once per fixed step.
+- **Rendering:** the renderer should subscribe to `frame$`, which fires once per animation frame with a value between 0 and 1 for smoothing movement between steps.
+
+About the tagged tests: US-001 (maze drawing) and the cross-browser and real-60fps criteria aren't really provable from the engine. Their tagged tests only check that Pac-Man spawns on a corridor tile in MAZE_LAYOUT and that drawing runs through the standard requestAnimationFrame API. That the maze actually draws, and draws correctly in every browser, still needs the renderer and manual checks.
+
+The loop runs outside Angular's change detection to keep it fast. Anything that updates the screen from `tick$` or `frame$` needs to bring the update back inside Angular, or the view won't refresh.
 
 ## Diagram
 
 ```mermaid
-graph TD
-  IDX[src/index.html app-root] --> MAIN[src/main.ts MOD-MAIN]
-  MAIN -->|bootstrapApplication| APP[AppComponent MOD-APP-COMPONENT]
-  MAIN -->|provideServiceWorker| SW[ngsw-worker.js / ngsw-config.json]
-  APP --> TYPES[shared/types.ts]
-  APP -.future.-> GS[GameStateService]
-  GS -.-> SCREENS[Start/Countdown/Gameplay/Pause/LevelComplete/GameOver/HighScoreEntry]
-  ANG[angular.json budgets <2MB] --> BUILD[ng build -> dist/]
+flowchart LR
+  Input[InputService direction$] -->|bindDirectionStream| Engine[GameEngineService]
+  RAF[requestAnimationFrame] --> Engine
+  Engine -->|accumulator fixed 1000/60ms steps| Step[step: apply direction, move PacMan via MAZE_LAYOUT]
+  Step --> Tick[tick$]
+  Tick --> Collision[CollisionService / timers]
+  Engine -->|per frame alpha| Frame[frame$]
+  Frame --> Renderer[RendererService]
 ```

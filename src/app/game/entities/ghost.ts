@@ -9,7 +9,7 @@ export class Ghost {
   name: GhostName;
   x: number = 0;
   y: number = 0;
-  state: GhostState = 'normal';
+  state: GhostState = 'in-house';
 
   constructor(name: GhostName, x: number = 0, y: number = 0) {
     this.name = name;
