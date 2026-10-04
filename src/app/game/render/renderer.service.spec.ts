@@ -1,4 +1,5 @@
 import { RendererService } from './renderer.service';
+import { SettingsStorageService } from '../../core/storage/settings-storage.service';
 import { MAZE_LAYOUT } from '../maze/maze.model';
 import { PacMan } from '../entities/pacman';
 import { Tile } from '../../shared/types';
@@ -51,9 +52,17 @@ function createMockCanvas(width = 448, height = 496): HTMLCanvasElement {
 
 describe('RendererService', () => {
   let service: RendererService;
+  let mockSettingsStorage: jasmine.SpyObj<SettingsStorageService>;
 
   beforeEach(() => {
-    service = new RendererService();
+    mockSettingsStorage = jasmine.createSpyObj('SettingsStorageService', [
+      'isColorblindModeEnabled',
+      'setColorblindMode',
+      'isMuted',
+      'setMute',
+    ]);
+    mockSettingsStorage.isColorblindModeEnabled.and.returnValue(false);
+    service = new RendererService(mockSettingsStorage);
   });
 
   describe('setCanvas', () => {
@@ -388,6 +397,56 @@ describe('RendererService', () => {
 
     it('should not throw when clear is called without a canvas', () => {
       expect(() => service.clear()).not.toThrow();
+    });
+  });
+
+  describe('getGhostColor', () => {
+    it('[US-029#1] should return normal ghost color when colorblind mode is disabled', () => {
+      mockSettingsStorage.isColorblindModeEnabled.and.returnValue(false);
+      const blinkyColor = service.getGhostColor('blinky');
+      expect(blinkyColor).toBe('#ff0000'); // Normal red
+    });
+
+    it('[US-029#1] should return colorblind-friendly ghost color when colorblind mode is enabled', () => {
+      mockSettingsStorage.isColorblindModeEnabled.and.returnValue(true);
+      const blinkyColor = service.getGhostColor('blinky');
+      expect(blinkyColor).toBe('#ff6b35'); // Colorblind-friendly orange-red
+    });
+
+    it('[US-029#1] should return correct color for pinky in normal mode', () => {
+      mockSettingsStorage.isColorblindModeEnabled.and.returnValue(false);
+      const pinkyColor = service.getGhostColor('pinky');
+      expect(pinkyColor).toBe('#ffb8ff'); // Normal pink
+    });
+
+    it('[US-029#1] should return correct color for pinky in colorblind mode', () => {
+      mockSettingsStorage.isColorblindModeEnabled.and.returnValue(true);
+      const pinkyColor = service.getGhostColor('pinky');
+      expect(pinkyColor).toBe('#004e89'); // Colorblind-friendly dark blue
+    });
+
+    it('[US-029#1] should return correct color for inky in normal mode', () => {
+      mockSettingsStorage.isColorblindModeEnabled.and.returnValue(false);
+      const inkyColor = service.getGhostColor('inky');
+      expect(inkyColor).toBe('#00ffff'); // Normal cyan
+    });
+
+    it('[US-029#1] should return correct color for inky in colorblind mode', () => {
+      mockSettingsStorage.isColorblindModeEnabled.and.returnValue(true);
+      const inkyColor = service.getGhostColor('inky');
+      expect(inkyColor).toBe('#f7b801'); // Colorblind-friendly yellow
+    });
+
+    it('[US-029#1] should return correct color for clyde in normal mode', () => {
+      mockSettingsStorage.isColorblindModeEnabled.and.returnValue(false);
+      const clydeColor = service.getGhostColor('clyde');
+      expect(clydeColor).toBe('#ffb847'); // Normal orange
+    });
+
+    it('[US-029#1] should return correct color for clyde in colorblind mode', () => {
+      mockSettingsStorage.isColorblindModeEnabled.and.returnValue(true);
+      const clydeColor = service.getGhostColor('clyde');
+      expect(clydeColor).toBe('#7209b7'); // Colorblind-friendly purple
     });
   });
 });

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Tile } from '../../shared/types';
 import { PacMan } from '../entities/pacman';
+import { SettingsStorageService } from '../../core/storage/settings-storage.service';
 
 /** Pixels per maze tile. 28 columns × 16px = 448px canvas width. */
 const TILE_SIZE = 16;
@@ -17,6 +18,22 @@ const COLORS = {
   tunnel: '#000000',
   empty: '#000000',
   pacman: '#ffff00',
+} as const;
+
+/** Standard ghost colors (red, pink, cyan, orange). */
+const GHOST_COLORS_STANDARD = {
+  blinky: '#ff0000',
+  pinky: '#ffb8ff',
+  inky: '#00ffff',
+  clyde: '#ffb847',
+} as const;
+
+/** Colorblind-friendly ghost colors (high contrast, distinct hues). */
+const GHOST_COLORS_COLORBLIND = {
+  blinky: '#ff6b35',    // Orange-red
+  pinky: '#004e89',     // Dark blue
+  inky: '#f7b801',      // Yellow
+  clyde: '#7209b7',     // Purple
 } as const;
 
 /** Dot radius in pixels. */
@@ -51,6 +68,8 @@ export class RendererService {
 
   /** Pixels per tile, exposed for coordinate conversion by other services. */
   readonly tileSize: number = TILE_SIZE;
+
+  constructor(private settingsStorage: SettingsStorageService) {}
 
   /**
    * Bind the renderer to a canvas element.
@@ -265,5 +284,15 @@ export class RendererService {
       case 'up':    return -Math.PI / 2;
       case 'none':  return 0; // Default facing right when stationary
     }
+  }
+
+  /**
+   * Get the color for a ghost based on its name and the current colorblind setting.
+   * Returns the appropriate color from either the standard or colorblind palette.
+   */
+  getGhostColor(ghostName: 'blinky' | 'pinky' | 'inky' | 'clyde'): string {
+    const isColorblindMode = this.settingsStorage.isColorblindModeEnabled();
+    const palette = isColorblindMode ? GHOST_COLORS_COLORBLIND : GHOST_COLORS_STANDARD;
+    return palette[ghostName];
   }
 }

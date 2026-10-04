@@ -157,7 +157,7 @@ export class PauseOverlayComponent {
   constructor(private gameState: GameStateService) {}
 
   onResume(): void {
-    this.gameState.setScreen('gameplay');
+    this.gameState.setScreen('playing');
   }
 
   onRestart(): void {

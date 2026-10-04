@@ -107,4 +107,23 @@ export class ScoreStorageService {
       // Silently fail if localStorage is unavailable
     }
   }
+
+  /**
+   * Check if a score qualifies as a high score (top 10 or new all-time high).
+   */
+  isHighScore(score: number): boolean {
+    const scores = this.loadHighScores();
+    if (scores.length < MAX_HIGH_SCORES) {
+      return true; // Not yet at max capacity
+    }
+    const lowestTopTen = scores[scores.length - 1]?.score || 0;
+    return score > lowestTopTen;
+  }
+
+  /**
+   * Add a high score entry (alias for saveHighScore for compatibility).
+   */
+  addHighScore(entry: Omit<HighScoreEntry, 'createdAt'> | HighScoreEntry): void {
+    this.saveHighScore(entry);
+  }
 }

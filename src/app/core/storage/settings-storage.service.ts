@@ -52,4 +52,60 @@ export class SettingsStorageService {
     current[key] = value;
     this.saveSettings(current);
   }
+
+  /**
+   * Check if colorblind mode is enabled.
+   */
+  isColorblindModeEnabled(): boolean {
+    return this.loadSettings().colorblindMode;
+  }
+
+  /**
+   * Set colorblind mode.
+   */
+  setColorblindMode(enabled: boolean): void {
+    this.updateSetting('colorblindMode', enabled);
+  }
+
+  /**
+   * Check if mute is enabled.
+   */
+  isMuted(): boolean {
+    return this.loadSettings().mute;
+  }
+
+  /**
+   * Set mute.
+   */
+  setMute(enabled: boolean): void {
+    this.updateSetting('mute', enabled);
+  }
+
+  /**
+   * Get mute preference (alias for isMuted).
+   */
+  getMutePreference(): boolean {
+    return this.isMuted();
+  }
+
+  /**
+   * Get colorblind mode (alias for isColorblindModeEnabled).
+   */
+  getColorblindMode(): boolean {
+    return this.isColorblindModeEnabled();
+  }
+
+  /**
+   * Toggle mute preference.
+   */
+  toggleMute(): void {
+    this.setMute(!this.isMuted());
+  }
+
+  /**
+   * Toggle colorblind mode.
+   */
+  toggleColorblindMode(): void {
+    this.setColorblindMode(!this.isColorblindModeEnabled());
+  }
 }
