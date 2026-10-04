@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Input,
+  OnInit,
+  ViewChildren,
+  QueryList,
+} from '@angular/core';
 import { GameStateService } from '../../game/state/game-state.service';
 import { ScoreStorageService } from '../../core/storage/score-storage.service';
 
@@ -31,7 +38,7 @@ import { ScoreStorageService } from '../../core/storage/score-storage.service';
               maxlength="1"
               tabindex="0"
               (keydown)="onInitialKeydown($event, 0)"
-              #initial0>
+              #initialInput>
             
             <input 
               class="high-score-entry__input"
@@ -39,7 +46,7 @@ import { ScoreStorageService } from '../../core/storage/score-storage.service';
               maxlength="1"
               tabindex="1"
               (keydown)="onInitialKeydown($event, 1)"
-              #initial1>
+              #initialInput>
             
             <input 
               class="high-score-entry__input"
@@ -47,7 +54,7 @@ import { ScoreStorageService } from '../../core/storage/score-storage.service';
               maxlength="1"
               tabindex="2"
               (keydown)="onInitialKeydown($event, 2)"
-              #initial2>
+              #initialInput>
           </div>
         </div>
 
@@ -55,9 +62,8 @@ import { ScoreStorageService } from '../../core/storage/score-storage.service';
           <button 
             class="high-score-entry__button high-score-entry__button--submit"
             tabindex="3"
-            (click)="onSubmit()"
-            (keydown.enter)="onSubmit()"
-            (keydown.space)="onSubmit()">
+            [disabled]="!isFormValid()"
+            (click)="onSubmit()">
             Submit
           </button>
         </div>
@@ -211,8 +217,10 @@ import { ScoreStorageService } from '../../core/storage/score-storage.service';
 })
 export class HighScoreEntryComponent implements OnInit {
   @Input() score: number = 0;
+  @ViewChildren('initialInput') initialInputs!: QueryList<any>;
 
   initials: string[] = ['', '', ''];
+  isSubmitting = false;
 
   constructor(
     private gameState: GameStateService,
@@ -222,27 +230,37 @@ export class HighScoreEntryComponent implements OnInit {
   ngOnInit(): void {
     // Focus first input on init
     setTimeout(() => {
-      const firstInput = document.querySelector(
-        '.high-score-entry__input'
-      ) as HTMLInputElement;
-      if (firstInput) {
-        firstInput.focus();
+      const inputs = this.initialInputs.toArray();
+      if (inputs.length > 0) {
+        inputs[0].nativeElement.focus();
       }
     }, 100);
+  }
+
+  isFormValid(): boolean {
+    return this.initials.every((initial) => initial.length === 1);
   }
 
   onInitialKeydown(event: KeyboardEvent, index: number): void {
     const input = event.target as HTMLInputElement;
     const char = event.key.toUpperCase();
 
+    // Handle Backspace
+    if (event.key === 'Backspace') {
+      event.preventDefault();
+      this.initials[index] = '';
+      input.value = '';
+      // Move to previous input if available
+      if (index > 0) {
+        const inputs = this.initialInputs.toArray();
+        inputs[index - 1].nativeElement.focus();
+      }
+      return;
+    }
+
     // Allow only letters
     if (!/^[A-Z]$/.test(char)) {
-      if (
-        event.key !== 'Backspace' &&
-        event.key !== 'Tab' &&
-        event.key !== 'Shift' &&
-        event.key !== 'Enter'
-      ) {
+      if (event.key !== 'Tab' && event.key !== 'Shift') {
         event.preventDefault();
       }
       return;
@@ -254,17 +272,18 @@ export class HighScoreEntryComponent implements OnInit {
 
     // Move to next input
     if (index < 2) {
-      const nextInput = document.querySelectorAll(
-        '.high-score-entry__input'
-      )[index + 1] as HTMLInputElement;
-      if (nextInput) {
-        nextInput.focus();
-      }
+      const inputs = this.initialInputs.toArray();
+      inputs[index + 1].nativeElement.focus();
     }
   }
 
   onSubmit(): void {
-    const initials = this.initials.join('').toUpperCase() || 'AAA';
+    if (this.isSubmitting || !this.isFormValid()) {
+      return;
+    }
+
+    this.isSubmitting = true;
+    const initials = this.initials.join('').toUpperCase();
     this.scoreStorage.addHighScore({
       initials,
       score: this.score,

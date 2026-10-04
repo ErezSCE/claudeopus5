@@ -80,11 +80,16 @@ export class ScoreStorageService {
    * Maintains the list in descending score order, keeps only the top 10,
    * and updates the all-time high score if necessary.
    * Automatically adds createdAt timestamp if not provided.
-   * Rejects scores <= 0.
+   * Rejects scores <= 0 or initials that are not exactly 3 uppercase letters.
    */
   saveHighScore(entry: Omit<HighScoreEntry, 'createdAt'> | HighScoreEntry): void {
     // Reject scores <= 0
     if (entry.score <= 0) {
+      return;
+    }
+
+    // Validate initials: must be exactly 3 uppercase letters
+    if (!/^[A-Z]{3}$/.test(entry.initials)) {
       return;
     }
 

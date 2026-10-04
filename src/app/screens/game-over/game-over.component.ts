@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
 import { GameStateService } from '../../game/state/game-state.service';
+import { ScoreStorageService } from '../../core/storage/score-storage.service';
 
 /**
  * Game over screen component (MOD-GAME-OVER).
@@ -149,10 +150,21 @@ import { GameStateService } from '../../game/state/game-state.service';
     `,
   ],
 })
-export class GameOverComponent {
+export class GameOverComponent implements OnInit {
   @Input() score: number = 0;
 
-  constructor(private gameState: GameStateService) {}
+  constructor(
+    private gameState: GameStateService,
+    private scoreStorage: ScoreStorageService
+  ) {}
+
+  ngOnInit(): void {
+    // Check if the score qualifies for high score entry
+    if (this.scoreStorage.isHighScore(this.score)) {
+      // Pass the score through game state and navigate to high-score-entry
+      this.gameState.setScreen('high-score-entry');
+    }
+  }
 
   onRestart(): void {
     this.gameState.setScreen('countdown');

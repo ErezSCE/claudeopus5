@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { GameStateService } from '../../game/state/game-state.service';
+import { SettingsStorageService } from '../../core/storage/settings-storage.service';
 
 /**
  * Pause overlay component (MOD-PAUSE-OVERLAY).
@@ -41,6 +42,15 @@ import { GameStateService } from '../../game/state/game-state.service';
             (keydown.enter)="onMainMenu()"
             (keydown.space)="onMainMenu()">
             Main Menu
+          </button>
+
+          <button 
+            class="pause-overlay__button pause-overlay__button--colorblind"
+            tabindex="3"
+            (click)="onToggleColorblind()"
+            (keydown.enter)="onToggleColorblind()"
+            (keydown.space)="onToggleColorblind()">
+            Toggle Colorblind Mode
           </button>
         </div>
 
@@ -136,6 +146,17 @@ import { GameStateService } from '../../game/state/game-state.service';
         box-shadow: 0 4px 12px rgba(255, 0, 255, 0.4);
       }
 
+      .pause-overlay__button--colorblind {
+        background: #00ffff;
+        color: #000;
+      }
+
+      .pause-overlay__button--colorblind:hover {
+        background: #00ffff;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 255, 255, 0.4);
+      }
+
       .pause-overlay__button:focus-visible {
         outline: 3px solid #ffff00;
         outline-offset: 2px;
@@ -165,7 +186,10 @@ import { GameStateService } from '../../game/state/game-state.service';
   ],
 })
 export class PauseOverlayComponent {
-  constructor(private gameState: GameStateService) {}
+  constructor(
+    private gameState: GameStateService,
+    private settingsStorage: SettingsStorageService
+  ) {}
 
   onResume(): void {
     this.gameState.setScreen('playing');
@@ -177,5 +201,9 @@ export class PauseOverlayComponent {
 
   onMainMenu(): void {
     this.gameState.setScreen('start');
+  }
+
+  onToggleColorblind(): void {
+    this.settingsStorage.toggleColorblindMode();
   }
 }

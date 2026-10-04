@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Tile } from '../../shared/types';
 import { PacMan } from '../entities/pacman';
+import { Ghost } from '../entities/ghost';
 import { SettingsStorageService } from '../../core/storage/settings-storage.service';
 
 /** Pixels per maze tile. 28 columns × 16px = 448px canvas width. */
@@ -164,6 +165,51 @@ export class RendererService {
     ctx.restore();
   }
 
+  /**
+   * Draw a ghost with its color based on the ghost name and colorblind setting.
+   * Draws a simple rounded-rectangle ghost shape.
+   *
+   * @param ghost  The Ghost entity with position and name.
+   */
+  drawGhost(ghost: Ghost): void {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+
+    const x = ghost.x * TILE_SIZE;
+    const y = ghost.y * TILE_SIZE;
+    const radius = 4;
+
+    // Get the color based on ghost name and colorblind mode
+    const color = this.getGhostColor(ghost.name);
+    ctx.fillStyle = color;
+
+    // Draw a rounded-rectangle ghost shape
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + TILE_SIZE - radius, y);
+    ctx.quadraticCurveTo(x + TILE_SIZE, y, x + TILE_SIZE, y + radius);
+    ctx.lineTo(x + TILE_SIZE, y + TILE_SIZE - radius);
+    ctx.quadraticCurveTo(x + TILE_SIZE, y + TILE_SIZE, x + TILE_SIZE - radius, y + TILE_SIZE);
+    ctx.lineTo(x + radius, y + TILE_SIZE);
+    ctx.quadraticCurveTo(x, y + TILE_SIZE, x, y + TILE_SIZE - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw eyes (simple white circles)
+    ctx.fillStyle = '#ffffff';
+    const eyeRadius = 2;
+    const eyeOffsetX = 4;
+    const eyeOffsetY = 5;
+    ctx.beginPath();
+    ctx.arc(x + eyeOffsetX, y + eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + TILE_SIZE - eyeOffsetX, y + eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+
   // ─── Private Helpers ──────────────────────────────────────────────
 
   /**
@@ -289,9 +335,10 @@ export class RendererService {
   /**
    * Get the color for a ghost based on its name and the current colorblind setting.
    * Returns the appropriate color from either the standard or colorblind palette.
+   * Uses the cached colorblind mode value for performance.
    */
   getGhostColor(ghostName: 'blinky' | 'pinky' | 'inky' | 'clyde'): string {
-    const isColorblindMode = this.settingsStorage.isColorblindModeEnabled();
+    const isColorblindMode = this.settingsStorage.getColorblindMode();
     const palette = isColorblindMode ? GHOST_COLORS_COLORBLIND : GHOST_COLORS_STANDARD;
     return palette[ghostName];
   }
