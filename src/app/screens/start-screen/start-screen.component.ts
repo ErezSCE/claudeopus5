@@ -1,9 +1,12 @@
 // [STUB]
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ScoreStorageService } from '../../core/storage/score-storage.service';
+import { HighScoreEntry } from '../../shared/types';
 
 /**
  * Start screen component (MOD-START-SCREEN).
  * Scaffold stub: displays the start screen and transitions to countdown on input.
+ * Integrates with ScoreStorageService to load and display high scores.
  */
 @Component({
   selector: 'app-start-screen',
@@ -22,4 +25,15 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     `,
   ],
 })
-export class StartScreenComponent {}
+export class StartScreenComponent implements OnInit {
+  highScores: HighScoreEntry[] = [];
+  allTimeHigh: number = 0;
+
+  constructor(private scoreStorage: ScoreStorageService) {}
+
+  ngOnInit(): void {
+    // Load high scores and all-time high on component initialization
+    this.highScores = this.scoreStorage.loadHighScores();
+    this.allTimeHigh = this.scoreStorage.loadAllTimeHigh();
+  }
+}
