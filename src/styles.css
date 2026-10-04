@@ -1,0 +1,43 @@
+/* Global styles: design tokens and base reset. Component styles live with their components. */
+:root {
+  --color-bg: #000;
+  --color-maze: #2121de;
+  --color-text: #fff;
+  --color-accent: #ffeb3b;
+  --color-focus: #00e5ff;
+  --font-arcade: 'Courier New', Courier, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-arcade);
+  touch-action: none;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
