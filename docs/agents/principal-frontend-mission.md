@@ -1,44 +1,43 @@
-# Principal Frontend Developer Mission Report — ASSIGN-004
+# Principal Frontend Developer Mission Report — ASSIGN-026
 
 **Agent**: principal-frontend  
-**Generated**: 2026-10-04T15:09:55.313Z
+**Generated**: 2026-10-04T15:21:40.613Z
 
 ---
 
-## Branch: claudeopus5/chore/scaffold
+## Branch: claudeopus5/feature/us-027-storage-accessibility-integration
 
-## Assignment: ASSIGN-004
+## Assignment: ASSIGN-026
 
 ## Files Changed
 
-- **modified** `src/app/game/engine/game-engine.service.ts` — Replaced the stub with a working GameEngineService. The loop uses requestAnimationFrame (run outside Angular's change detection) and advances the game in fixed 1000/60 ms steps, adding each frame's elapsed time to a running total. Very long frames are capped at 250 ms so the game can't fall too far behind. Each step applies the newest queued direction and moves Pac-Man tile by tile using MAZE_LAYOUT: he only turns into walkable tiles, can reverse mid-tile, stops in front of walls (and never enters ghost-house or door tiles), and wraps through the tunnel. After each step it emits tick$ (for collision and timer hooks); once per animation frame it emits frame$ with an interpolation value for the renderer. Public methods: start/stop/pause/resume, setDirection, bindDirectionStream, plus pacman, ticks and isRunning.
-- **modified** `src/app/game/engine/game-engine.service.spec.ts` — Jasmine specs with a mocked requestAnimationFrame. They check that the update count stays at about 60 per second at 30, 60, 75, 144 and 240fps and with uneven frame timing, that long frames are capped, that tick$ fires once per step, and that at 60Hz each frame does exactly one update. They also cover pause/resume/stop, Pac-Man spawning on a corridor tile, frame$ values staying between 0 and 1, the direction stream being applied within one frame, refusing to turn into walls, stopping in front of walls, and taking a queued turn at the next junction. Test names are tagged for US-001#1/#2, US-002#1/#2 and US-003#1/#2.
-- **modified** `src/app/game/entities/ghost.ts` — One-line fix to a scaffold compile error: the default state was 'normal', which isn't a valid GhostState in the frozen shared types. Changed to 'in-house', the state ghosts start in. Without this nothing compiled, so neither the test suite nor the build could run.
+- **created** `src/app/offline-build.spec.ts` — Tagged tests for US-033 and US-034. They check the real build config files (ngsw-config.json and angular.json). Covered: the service worker is turned on for production, the app shell and all asset types (including audio) are precached at install time, navigations fall back to the cached index, budgets stay at or under 2MB with warning ≤ error, and the production build is optimised.
+- **created** `src/app/testing/json-module.d.ts` — Type declaration for '*.json' so the spec can import ngsw-config.json and angular.json without changing any tsconfig.
+- **modified** `README.md` — Added steps for checking offline play and bundle size by hand, plus the asset compression policy.
 
 ## Notes
 
-The game engine is in place: a fixed 60-steps-per-second loop, Pac-Man movement that respects the maze walls, and input handling. The full test suite passes (82 tests) and the production build succeeds (about 135 kB initial bundle).
+The production build is far under 2MB, and after one online load the app opens with the network switched off.
 
-One change outside my assignment: `ghost.ts` didn't compile because its default state was 'normal', which isn't a valid value in the shared types. I changed it to 'in-house' (where ghosts start); without that, neither the tests nor the build could run.
+**Bundle size (US-034):** `ng build --configuration production` finished with no budget warnings or errors. All of dist/ comes to about 237KB, and the JS/CSS loaded at startup is about 210KB.
 
-Three things are still to be connected by other assignments:
-- **Keyboard input:** InputService doesn't exist yet, so the engine can't import it. Instead it exposes `bindDirectionStream(direction$)` and `setDirection()`. The gameplay screen (or InputService when it lands) should call `bindDirectionStream` and then `start()`. Until then, arrow keys and WASD don't actually move Pac-Man in the running app; the tests drive the engine directly.
-- **Collisions and timers:** the collision service's constructor still throws, so the engine doesn't inject it. Collision checks and the later level, scared and scatter/chase timers should subscribe to `tick$`, which fires once per fixed step.
-- **Rendering:** the renderer should subscribe to `frame$`, which fires once per animation frame with a value between 0 and 1 for smoothing movement between steps.
+**Offline (US-033):** I served dist/ locally and loaded it in headless Chrome with puppeteer. The service worker became active and precached index.html, main.js, polyfills.js, styles.css and manifest.webmanifest. I then cut the network and reloaded, and the app loaded from the cache (title 'Pac-Man', start screen showing). The full Pac-Man game isn't built yet, so this proves the app loads offline but not that a whole game can be played offline.
 
-About the tagged tests: US-001 (maze drawing) and the cross-browser and real-60fps criteria aren't really provable from the engine. Their tagged tests only check that Pac-Man spawns on a corridor tile in MAZE_LAYOUT and that drawing runs through the standard requestAnimationFrame API. That the maze actually draws, and draws correctly in every browser, still needs the renderer and manual checks.
+**Asset compression (TASK-069):** there was nothing to compress. The assets folder only holds .gitkeep, and nothing in the code points to any image or audio file. AudioService (src/app/game/audio/audio.service.ts) doesn't exist yet, so sound files haven't been added. Any file put in src/assets/ later will be precached automatically; the README now gives size limits for those files.
 
-The loop runs outside Angular's change detection to keep it fast. Anything that updates the screen from `tick$` or `frame$` needs to bring the update back inside Angular, or the view won't refresh.
+**Tests:** `npm test` passes, 117 of 117, including the new tagged tests for US-033#1, US-033#2, US-034#1 and US-034#2. Those tests check the config files the build uses, not dist/ itself, so the 2MB figure comes from the manual build above. The README has the manual steps.
+
+**Risk for the game engine owner:** main.ts (which I can't modify) only registers the service worker once the app has been idle, or after 30 seconds at most. If the requestAnimationFrame game loop runs inside Angular's zone, the app never goes idle. Registration then waits the full 30 seconds, and a player who goes offline before that won't have offline play. GameEngineService should run its loop with NgZone.runOutsideAngular so the service worker registers straight away.
 
 ## Diagram
 
 ```mermaid
 flowchart LR
-  Input[InputService direction$] -->|bindDirectionStream| Engine[GameEngineService]
-  RAF[requestAnimationFrame] --> Engine
-  Engine -->|accumulator fixed 1000/60ms steps| Step[step: apply direction, move PacMan via MAZE_LAYOUT]
-  Step --> Tick[tick$]
-  Tick --> Collision[CollisionService / timers]
-  Engine -->|per frame alpha| Frame[frame$]
-  Frame --> Renderer[RendererService]
+  A[ng build --configuration production] -->|budgets in angular.json| B[dist/ ~237KB]
+  A -->|serviceWorker: ngsw-config.json| C[ngsw.json + ngsw-worker.js]
+  B --> D[Static host]
+  D -->|first load| E[Browser]
+  C -->|prefetch app + assets groups| F[Cache Storage]
+  E -->|offline reload| F
+  F --> G[App shell + JS/CSS served offline]
 ```
