@@ -48,6 +48,5 @@ junit.xml
 .parcel-cache/
 .conventions/
 .worktrees/
-.worktrees-failed/
 .agent/
 # ─── /AgenticDevTeam ───
